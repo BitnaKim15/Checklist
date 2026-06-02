@@ -74,14 +74,14 @@
                         <div class="flex-1 min-w-0">
                             <div class="text-xs text-slate-400 font-semibold mb-2">여행 기간 설정</div>
                             <div class="flex items-center gap-1.5 flex-nowrap w-full">
-                                <!-- 출발일 (상하 대칭 패딩 및 leading-none 추가로 가로 세로 정가운데 패치 완료) -->
+                                <!-- 출발일 -->
                                 <div class="flex items-center gap-1 min-w-0">
                                     <span class="text-[10px] sm:text-[11px] text-slate-400 flex-shrink-0">출발</span>
                                     <input type="date" id="start-date" onchange="calculateTravelPeriod()" class="text-xs font-bold text-slate-700 focus:outline-none border-b border-sky-200 py-0.5 leading-none cursor-pointer w-[95px] sm:w-28 flex-shrink-0">
                                 </div>
                                 <!-- 구분 기호 -->
                                 <span class="text-slate-300 text-xs font-bold flex-shrink-0">~</span>
-                                <!-- 귀국일 (상하 대칭 패딩 및 leading-none 추가로 가로 세로 정가운데 패치 완료) -->
+                                <!-- 귀국일 -->
                                 <div class="flex items-center gap-1 min-w-0">
                                     <span class="text-[10px] sm:text-[11px] text-slate-400 flex-shrink-0">귀국</span>
                                     <input type="date" id="end-date" onchange="calculateTravelPeriod()" class="text-xs font-bold text-slate-700 focus:outline-none border-b border-sky-200 py-0.5 leading-none cursor-pointer w-[95px] sm:w-28 flex-shrink-0">
@@ -155,7 +155,7 @@
                 </h2>
                 
                 <form id="todo-form" onsubmit="addTask(event)" class="space-y-5">
-                    <!-- 리스트 목적지 설정 (예약/필수 vs 캐리어 패킹) -->
+                    <!-- 리스트 목적지 설정 -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">어디에 등록할까요?</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -248,7 +248,7 @@
                     </button>
                 </form>
 
-                <!-- 여행 팁 박스 (대한항공 타이베이 수하물 규정 패치 완료) -->
+                <!-- 여행 팁 박스 -->
                 <div class="mt-6 p-4 bg-sky-50/70 rounded-2xl border border-sky-100/50">
                     <h4 class="text-xs font-bold text-sky-800 flex items-center gap-1.5 mb-2">
                         <span>💡</span> 스마트 짐싸기 Tip! (대만 노선 전용)
@@ -298,7 +298,7 @@
 
                         <!-- 예약 리스트 컨테이너 -->
                         <div id="essential-list" class="space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5">
-                            <!-- JS 렌더링 -->
+                            <div class="text-center py-8 text-slate-400 text-xs">동기화 대기 중...</div>
                         </div>
                     </div>
 
@@ -326,7 +326,7 @@
 
                         <!-- 캐리어 짐싸기 컨테이너 -->
                         <div id="packing-list" class="space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5">
-                            <!-- JS 렌더링 -->
+                            <div class="text-center py-8 text-slate-400 text-xs">동기화 대기 중...</div>
                         </div>
                     </div>
 
@@ -336,50 +336,240 @@
         </div>
     </div>
 
-    <!-- 스크립트 작성 -->
-    <script>
-        // 초기에 두 리스트('essential', 'packing')로 골고루 배치된 여행 특화 데이터
-        let todos = [
-            // 1. 예약 및 필수 체크리스트 항목들
-            { id: 1, content: "여권 만료일 확인 및 소중한 사본 잊지 말고 미리미리 가방 깊숙이 챙겨두기 🛂", listType: "essential", category: "준비/예약", priority: "high", completed: true },
-            { id: 2, content: "항공권 및 호텔 바우처 모바일 저장 및 만약을 위한 A4 용지 프린트 ✈️", listType: "essential", category: "준비/예약", priority: "high", completed: false },
-            { id: 3, content: "여행자 보험 가입 및 eSIM 구매 📱", listType: "essential", category: "준비/예약", priority: "medium", completed: false },
-            
-            // 2. 캐리어 짐싸기 리스트 항목들
-            { id: 4, content: "3구 멀티어댑터 및 고속 충전 릴케이블 🔌", listType: "packing", category: "전자기기", priority: "high", completed: false },
-            { id: 5, content: "쌀쌀한 기내와 야간 일교차 대비용 가디건 및 여벌의 편한 데일리 옷 👕", listType: "packing", category: "의류", priority: "medium", completed: false },
-            { id: 6, content: "비상용 상비약 (타이레놀, 소화제, 밴드) 💊", listType: "packing", category: "위생/비상약", priority: "high", completed: true }
-        ];
+    <!-- Firebase 11.6.1 및 비즈니스 모듈 연동 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 글로벌 환경 변수 불러오기
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const isFirebaseConfigured = typeof __firebase_config !== 'undefined' && __firebase_config;
+
+        let db = null;
+        let auth = null;
+        let user = null;
         
-        // 각 영역별 독립된 필터 상태 관리
+        let todos = [];
         let essentialFilter = 'all';
         let packingFilter = 'all';
 
-        // 페이지 최초 온로드 핸들러
-        window.onload = function() {
-            // 여행 출발일은 오늘, 귀국일은 4일 뒤로 초기화하여 3박 4일 일정 자동 연출
-            const today = new Date();
-            const formattedToday = today.toISOString().split('T')[0];
-            
-            const defaultEndDate = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
-            const formattedEndDate = defaultEndDate.toISOString().split('T')[0];
-            
-            document.getElementById('start-date').value = formattedToday;
-            document.getElementById('end-date').value = formattedEndDate;
-            
-            calculateTravelPeriod();
-            fetchExchangeRate(); // 페이지 오픈 시 실시간 환율 연동
-            renderTodos();
+        // 기본 목업 데이터셋 (계정 생성 시 최초 1회만 DB 자동 세팅용)
+        const defaultTodos = [
+            { content: "여권 만료일 확인 및 소중한 사본 잊지 말고 미리미리 가방 깊숙이 챙겨두기 🛂", listType: "essential", category: "준비/예약", priority: "high", completed: true, createdAt: 1 },
+            { content: "항공권 및 호텔 바우처 모바일 저장 및 만약을 위한 A4 용지 프린트 ✈️", listType: "essential", category: "준비/예약", priority: "high", completed: false, createdAt: 2 },
+            { content: "여행자 보험 가입 및 eSIM 구매 📱", listType: "essential", category: "준비/예약", priority: "medium", completed: false, createdAt: 3 },
+            { content: "3구 멀티어댑터 및 고속 충전 릴케이블 🔌", listType: "packing", category: "전자기기", priority: "high", completed: false, createdAt: 4 },
+            { content: "쌀쌀한 기내와 야간 일교차 대비용 가디건 및 여벌의 편한 데일리 옷 👕", listType: "packing", category: "의류", priority: "medium", completed: false, createdAt: 5 },
+            { content: "비상용 상비약 (타이레놀, 소화제, 밴드) 💊", listType: "packing", category: "위생/비상약", priority: "high", completed: true, createdAt: 6 }
+        ];
+
+        // 1. Firebase 인증 및 실시간 동기화 리스너 개시
+        const startApp = async () => {
+            if (isFirebaseConfigured) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // 보안 및 데이터 정합성을 위한 자동 로그인 처리 (RULE 3)
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (err) {
+                        console.error("인증 처리 도중 오류가 발생해예:", err);
+                    }
+                };
+                await initAuth();
+
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) {
+                        setupRealtimeData();
+                    }
+                });
+            } else {
+                // 백엔드 연결 불가능 시 비활성 오프라인 폴백 처리 (안전한 컴파일 보장)
+                console.warn("백엔드 설정 누락으로 임시 로컬 메모리 모드로 진행해예.");
+                todos = [...defaultTodos];
+                const today = new Date();
+                const formattedToday = today.toISOString().split('T')[0];
+                const defaultEndDate = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
+                const formattedEndDate = defaultEndDate.toISOString().split('T')[0];
+                document.getElementById('start-date').value = formattedToday;
+                document.getElementById('end-date').value = formattedEndDate;
+                calculateTravelPeriod();
+                renderTodos();
+            }
         };
 
-        // 실시간 TWD(대만 달러) -> KRW(원화) 환율 호출 API 기능
+        // 2. 실시간 클라우드 DB 구독 설정
+        function setupRealtimeData() {
+            if (!user) return;
+
+            // 여행 기간 설정 리스너 (RULE 1 Strict Path)
+            const periodDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'period');
+            onSnapshot(periodDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('start-date').value = data.startDate || '';
+                    document.getElementById('end-date').value = data.endDate || '';
+                    calculateTravelPeriodSilent();
+                } else {
+                    // 최초 설정 세팅
+                    const today = new Date();
+                    const formattedToday = today.toISOString().split('T')[0];
+                    const defaultEndDate = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
+                    const formattedEndDate = defaultEndDate.toISOString().split('T')[0];
+                    
+                    document.getElementById('start-date').value = formattedToday;
+                    document.getElementById('end-date').value = formattedEndDate;
+                    saveTravelPeriod(formattedToday, formattedEndDate);
+                }
+            }, (err) => {
+                console.error("기간 로딩에 실패했어예:", err);
+            });
+
+            // 체크리스트 리스트 리스너 (RULE 1, RULE 2 Simple Fetch)
+            const todosColRef = collection(db, 'artifacts', appId, 'users', user.uid, 'todos');
+            onSnapshot(todosColRef, (snapshot) => {
+                if (snapshot.empty) {
+                    // 기본 리스트 씨딩
+                    defaultTodos.forEach(async (item) => {
+                        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'todos'), item);
+                    });
+                    return;
+                }
+
+                todos = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    todos.push({
+                        id: doc.id,
+                        content: data.content,
+                        listType: data.listType,
+                        category: data.category,
+                        priority: data.priority,
+                        completed: data.completed,
+                        createdAt: data.createdAt || 0
+                    });
+                });
+
+                // RULE 2 - 메모리 내부 정렬
+                todos.sort((a, b) => b.createdAt - a.createdAt);
+                renderTodos();
+            }, (err) => {
+                console.error("리스트 로딩에 실패했어예:", err);
+            });
+        }
+
+        // 3. 여행 일정 업데이트 데이터 저장
+        async function saveTravelPeriod(startDate, endDate) {
+            if (!user) return;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'period'), {
+                    startDate: startDate,
+                    endDate: endDate
+                });
+            } catch (err) {
+                console.error("기간 저장 실패:", err);
+            }
+        }
+
+        // 4. 새로운 할 일 추가
+        async function addTask(event) {
+            event.preventDefault();
+            
+            const contentInput = document.getElementById('task-content');
+            const content = contentInput.value.trim();
+            if(!content) {
+                showToast("내용을 입력해 주세요! 🥺");
+                return;
+            }
+
+            const listType = document.querySelector('input[name="listType"]:checked').value;
+            const category = document.querySelector('input[name="category"]:checked').value;
+            const priority = document.querySelector('input[name="priority"]:checked').value;
+
+            const newTodo = {
+                content: content,
+                listType: listType,
+                category: category,
+                priority: priority,
+                completed: false,
+                createdAt: Date.now()
+            };
+
+            if (user) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'todos'), newTodo);
+                    contentInput.value = '';
+                    const listName = listType === 'essential' ? '예약 및 필수' : '캐리어 짐싸기';
+                    showToast(`[${listName}] 목록에 잘 담겼습니다! 🎒✨`);
+                } catch (err) {
+                    console.error("할 일 등록 에러:", err);
+                }
+            } else {
+                // 오프라인 폴백 처리
+                newTodo.id = Date.now();
+                todos.unshift(newTodo);
+                contentInput.value = '';
+                renderTodos();
+            }
+        }
+
+        // 5. 체크박스 상태 변경 토글
+        async function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (!todo) return;
+
+            const nextCompleted = !todo.completed;
+
+            if (user) {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'todos', id), {
+                        completed: nextCompleted
+                    });
+                    if (nextCompleted) {
+                        showToast("확인 완료 처리되었습니다! 👍💖");
+                    }
+                } catch (err) {
+                    console.error("상태 전환 오류:", err);
+                }
+            } else {
+                todo.completed = nextCompleted;
+                renderTodos();
+            }
+        }
+
+        // 6. 단일 할 일 삭제하기
+        async function deleteTodo(id) {
+            if (user) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'todos', id));
+                    showToast("체크 항목이 삭제되었습니다! 🗑️");
+                } catch (err) {
+                    console.error("삭제 실패:", err);
+                }
+            } else {
+                todos = todos.filter(t => t.id !== id);
+                renderTodos();
+                showToast("체크 항목이 삭제되었습니다! 🗑️");
+            }
+        }
+
+        // 7. 실시간 TWD -> KRW 환율 계산기
         async function fetchExchangeRate() {
             const refreshIcon = document.getElementById('refresh-icon');
-            if (refreshIcon) refreshIcon.classList.add('animate-spin'); // 로딩 애니메이션 실행
+            if (refreshIcon) refreshIcon.classList.add('animate-spin');
             
             try {
                 const response = await fetch('https://open.er-api.com/v6/latest/TWD');
-                if (!response.ok) throw new Error('네트워크 상태가 원활하지 않습니다.');
+                if (!response.ok) throw new Error('네트워크 상태 지연');
                 
                 const data = await response.json();
                 const krwRate = data.rates.KRW;
@@ -389,11 +579,8 @@
                     document.getElementById('twd-rate').textContent = formattedRate;
                     document.getElementById('exchange-calc').textContent = `100 TWD = 약 ${(krwRate * 100).toLocaleString('ko-KR', {maximumFractionDigits: 0})} KRW (실시간 환율)`;
                     document.getElementById('exchange-calc').className = "text-[10px] text-emerald-600 font-semibold mt-1";
-                } else {
-                    throw new Error('원화 환율 정보를 파싱하지 못했습니다.');
                 }
             } catch (error) {
-                console.error('환율 정보 호출 에러:', error);
                 const fallbackRate = 42.50;
                 document.getElementById('twd-rate').textContent = fallbackRate.toFixed(2);
                 document.getElementById('exchange-calc').textContent = `100 TWD = 약 ${(fallbackRate * 100).toLocaleString('ko-KR')} KRW (네트워크 지연 대체값)`;
@@ -407,8 +594,17 @@
             }
         }
 
-        // 출국 및 귀국일 기반 디데이 및 여행 기간 계산 기능
+        // 8. 날짜 변경 감지 시 자동 연산 및 업로드 연동
         function calculateTravelPeriod() {
+            const startDateInput = document.getElementById('start-date').value;
+            const endDateInput = document.getElementById('end-date').value;
+            calculateTravelPeriodSilent();
+            if (startDateInput && endDateInput) {
+                saveTravelPeriod(startDateInput, endDateInput);
+            }
+        }
+
+        function calculateTravelPeriodSilent() {
             const startDateInput = document.getElementById('start-date').value;
             const endDateInput = document.getElementById('end-date').value;
             const ddayDisplay = document.getElementById('dday-display');
@@ -441,7 +637,6 @@
                 ddayClass = "text-xs font-medium text-slate-400 mt-2";
             }
 
-            // 귀국 날짜 연동
             if (endDateInput) {
                 const endDate = new Date(endDateInput);
                 endDate.setHours(0, 0, 0, 0);
@@ -464,7 +659,7 @@
             ddayDisplay.className = ddayClass;
         }
 
-        // 알림용 토스트 메세지 출력
+        // 알림 레이어 제어
         function showToast(message) {
             const toast = document.getElementById('toast-message');
             const toastText = document.getElementById('toast-text');
@@ -479,62 +674,7 @@
             }, 2500);
         }
 
-        // 새로운 할 일 / 준비물 추가 로직
-        function addTask(event) {
-            event.preventDefault();
-            
-            const contentInput = document.getElementById('task-content');
-            const content = contentInput.value.trim();
-            if(!content) {
-                showToast("내용을 입력해 주세요! 🥺");
-                return;
-            }
-
-            const listType = document.querySelector('input[name="listType"]:checked').value;
-            const category = document.querySelector('input[name="category"]:checked').value;
-            const priority = document.querySelector('input[name="priority"]:checked').value;
-
-            const newTodo = {
-                id: Date.now(),
-                content: content,
-                listType: listType,
-                category: category,
-                priority: priority,
-                completed: false
-            };
-
-            todos.unshift(newTodo);
-            contentInput.value = ''; // 입력란 초기화
-            
-            renderTodos();
-            
-            const listName = listType === 'essential' ? '예약 및 필수' : '캐리어 짐싸기';
-            showToast(`[${listName}] 목록에 잘 담겼습니다! 🎒✨`);
-        }
-
-        // 체크박스 상태 토글
-        function toggleTodo(id) {
-            todos = todos.map(todo => {
-                if(todo.id === id) {
-                    const updatedState = !todo.completed;
-                    if(updatedState) {
-                        showToast("확인 완료 처리되었습니다! 👍💖");
-                    }
-                    return { ...todo, completed: updatedState };
-                }
-                return todo;
-            });
-            renderTodos();
-        }
-
-        // 단일 할 일 삭제하기
-        function deleteTodo(id) {
-            todos = todos.filter(todo => todo.id !== id);
-            renderTodos();
-            showToast("체크 항목이 삭제되었습니다! 🗑️");
-        }
-
-        // 개별 필터 적용 (예약 및 필수 리스트 전용)
+        // 개별 필터 적용 (예약용)
         function setEssentialFilter(filterType) {
             essentialFilter = filterType;
             const filters = ['all', 'active', 'completed'];
@@ -549,7 +689,7 @@
             renderTodos();
         }
 
-        // 개별 필터 적용 (캐리어 짐싸기 리스트 전용)
+        // 개별 필터 적용 (패킹용)
         function setPackingFilter(filterType) {
             packingFilter = filterType;
             const filters = ['all', 'active', 'completed'];
@@ -564,7 +704,7 @@
             renderTodos();
         }
 
-        // 우선순위 뱃지 가져오기 (아이콘만 표시 및 백그라운드로 구분)
+        // 아이콘 뱃지 전용 빌더
         function getPriorityBadge(priority) {
             if(priority === 'high') {
                 return `<span class="bg-rose-50 text-rose-600 text-xs p-1 rounded-lg border border-rose-100 flex items-center justify-center" title="필수">🚨</span>`;
@@ -575,7 +715,6 @@
             }
         }
 
-        // 카테고리 뱃지 변환 (아이콘만 표시)
         function getCategoryBadge(category) {
             let emoji = '📂';
             if(category === '준비/예약') emoji = '🎫';
@@ -585,9 +724,8 @@
             return `<span class="bg-slate-100 text-slate-600 text-xs p-1 rounded-lg flex items-center justify-center" title="${category}">${emoji}</span>`;
         }
 
-        // 전체 진행률 및 하부 목록별 진행 게이지 업데이트
+        // 게이지 통계 연산
         function updateStats() {
-            // 1. 전체 비율 계산
             const total = todos.length;
             const completed = todos.filter(t => t.completed).length;
             const totalRatio = total === 0 ? 0 : Math.round((completed / total) * 100);
@@ -596,7 +734,6 @@
             document.getElementById('total-count').textContent = `(${completed}/${total}개 완료)`;
             document.getElementById('total-progress-bar').style.width = `${totalRatio}%`;
 
-            // 2. 예약 및 필수 리스트 비율 계산
             const essentials = todos.filter(t => t.listType === 'essential');
             const essentialCompleted = essentials.filter(t => t.completed).length;
             const essentialRatio = essentials.length === 0 ? 0 : Math.round((essentialCompleted / essentials.length) * 100);
@@ -604,7 +741,6 @@
             document.getElementById('essential-ratio').textContent = `${essentialRatio}% 완료`;
             document.getElementById('essential-bar').style.width = `${essentialRatio}%`;
 
-            // 3. 캐리어 리스트 비율 계산
             const packings = todos.filter(t => t.listType === 'packing');
             const packingCompleted = packings.filter(t => t.completed).length;
             const packingRatio = packings.length === 0 ? 0 : Math.round((packingCompleted / packings.length) * 100);
@@ -613,7 +749,7 @@
             document.getElementById('packing-bar').style.width = `${packingRatio}%`;
         }
 
-        // 각 개별 아이템 카드를 그리는 공통 렌더링 서브 함수
+        // 개별 체크 카드 컴포넌트 마크업 구조 생성
         function createItemHtml(todo) {
             const isCompleted = todo.completed;
             const completedStyle = isCompleted ? 'opacity-60 line-through text-slate-400 bg-sky-50/20' : 'bg-slate-50/50 hover:bg-white hover:border-sky-100';
@@ -621,10 +757,8 @@
             
             return `
                 <div class="group flex items-center justify-between p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all duration-300 ${completedStyle} gap-3 min-w-0">
-                    <!-- 체크박스 + 내용 + 카테고리 + 중요도 한 줄 정렬 -->
                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <!-- 1. 체크박스 -->
-                        <button onclick="toggleTodo(${todo.id})" class="flex-shrink-0 focus:outline-none transition-transform active:scale-90" aria-label="준비 상태 변경">
+                        <button onclick="toggleTodo('${todo.id}')" class="flex-shrink-0 focus:outline-none transition-transform active:scale-90" aria-label="준비 상태 변경">
                             ${isCompleted ? 
                                 `<div class="w-6 h-6 rounded-lg ${checkboxColor} flex items-center justify-center text-white shadow-sm transition-all">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -635,20 +769,17 @@
                             }
                         </button>
                         
-                        <!-- 2. 내용 -->
                         <p class="text-[13px] font-bold line-clamp-2 break-all text-slate-700 flex-1 min-w-0 leading-snug ${isCompleted ? 'text-slate-400' : ''}" title="${todo.content}">
                             ${todo.content}
                         </p>
                         
-                        <!-- 3 & 4. 카테고리 & 중요도 아이콘 -->
                         <div class="flex items-center gap-1 flex-shrink-0">
                             ${getCategoryBadge(todo.category)}
                             ${getPriorityBadge(todo.priority)}
                         </div>
                     </div>
 
-                    <!-- 5. 삭제 아이콘 -->
-                    <button onclick="deleteTodo(${todo.id})" class="flex-shrink-0 p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all duration-200" title="지우기">
+                    <button onclick="deleteTodo('${todo.id}')" class="flex-shrink-0 p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all duration-200" title="지우기">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
@@ -657,12 +788,11 @@
             `;
         }
 
-        // 전체 화면 UI 갱신 중심 함수
+        // 전체 화면 UI 렌더링
         function renderTodos() {
             const essentialList = document.getElementById('essential-list');
             const packingList = document.getElementById('packing-list');
             
-            // 1. 필수 리스트 개별 필터링 분기 적용
             let filteredEssentials = todos.filter(todo => todo.listType === 'essential');
             if (essentialFilter === 'active') {
                 filteredEssentials = filteredEssentials.filter(todo => !todo.completed);
@@ -670,7 +800,6 @@
                 filteredEssentials = filteredEssentials.filter(todo => todo.completed);
             }
 
-            // 2. 캐리어 리스트 개별 필터링 분기 적용
             let filteredPackings = todos.filter(todo => todo.listType === 'packing');
             if (packingFilter === 'active') {
                 filteredPackings = filteredPackings.filter(todo => !todo.completed);
@@ -678,7 +807,6 @@
                 filteredPackings = filteredPackings.filter(todo => todo.completed);
             }
 
-            // 1. 필수 리스트 렌더링
             if (filteredEssentials.length === 0) {
                 essentialList.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/20">
@@ -693,7 +821,6 @@
                 essentialList.innerHTML = html;
             }
 
-            // 2. 캐리어 패킹 리스트 렌더링
             if (filteredPackings.length === 0) {
                 packingList.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/20">
@@ -708,11 +835,21 @@
                 packingList.innerHTML = html;
             }
 
-            // 게이지바 상태 계산 반영
             updateStats();
         }
+
+        // 모듈 내 비즈니스 핵심 함수 전역 마운트 (가운데 정렬 정합성용)
+        window.calculateTravelPeriod = calculateTravelPeriod;
+        window.fetchExchangeRate = fetchExchangeRate;
+        window.addTask = addTask;
+        window.toggleTodo = toggleTodo;
+        window.deleteTodo = deleteTodo;
+        window.setEssentialFilter = setEssentialFilter;
+        window.setPackingFilter = setPackingFilter;
+
+        // 실행 개시
+        startApp();
+        fetchExchangeRate();
     </script>
 </body>
 </html>
-
-```
